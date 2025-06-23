@@ -16,6 +16,6 @@ python dispatcher.py processes.txt files.txt
 
 ### Projeto desenvolvido para a disciplina Fundamentos de Sistemas Operacionais — Universidade de Brasília (UnB)
 
-Luana Cruz — 202033543
-Lucas de Oliveira — 200022857
+Luana Cruz — 202033543  
+Lucas de Oliveira — 200022857  
 Regina Emy — 190037351
