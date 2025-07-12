@@ -106,14 +106,27 @@ class Dispatcher:
     
     def executar_processo(self, processo):
         """Executa um processo por 1 quantum e imprime as instruções"""
-        print(f"P{processo.pid} STARTED")
-        for i in range(1, processo.tempo_executado + 1):
-            print(f"P{processo.pid} instruction {i}")
+        #print(f"P{processo.pid} STARTED")
+        #for i in range(1, processo.tempo_executado + 1):
+        #    print(f"P{processo.pid} instruction {i}")
         
+        #if processo.concluido():
+        #    print(f"P{processo.pid} return SIGINT")
+        #
+        if processo.tempo_executado == 0:
+            print(f"P{processo.pid} STARTED")
+
+        # Instrução nova (1‑based)
+        instr = processo.tempo_executado + 1
+        print(f"P{processo.pid} instruction {instr}")
+
+        # Avança o tempo de CPU já dentro da função
+        processo.incrementar_tempo_executado()
+
+        # Se concluiu, avisa e sinaliza retorno
         if processo.concluido():
             print(f"P{processo.pid} return SIGINT")
-    
-    
+        
 
     def executar_operacoes_arquivo(self):
         print("\nSistema de arquivos =>")
@@ -144,12 +157,9 @@ class Dispatcher:
                     print(f"Operação {self.operacao_counter} => Sucesso: O processo {pid} deletou o arquivo {nome}")
             
             self.operacao_counter += 1
-        
-        print("\nMapa de ocupação do disco:")
+        # print("\nMapa de ocupação do disco:")
         self.gerenciador_arquivos.imprimir_mapa_disco()
 
-
-    
     def executar(self):
         self.carregar_processos()
         self.carregar_arquivos_e_operacoes()
@@ -158,6 +168,7 @@ class Dispatcher:
         
         while self.processos_ativos or any(p.tempo_inicializacao >= self.tempo_atual for p in self.processos):
             print(f"\nTempo {self.tempo_atual}:")
+            executou_algo = False
             
             # Admitir novos processos que iniciam neste tempo
             self.admitir_novos_processos()
@@ -167,8 +178,9 @@ class Dispatcher:
             
             if processo:
                 self.executar_processo(processo)
-                processo.incrementar_tempo_executado()
-                
+                #processo.incrementar_tempo_executado()
+                executou_algo = True
+
                 # Verificar se processo concluiu
                 if processo.concluido():
                     self.gerenciador_memoria.liberar_memoria(processo)
@@ -179,7 +191,6 @@ class Dispatcher:
                     # Processo não concluído - rebaixar prioridade se for de usuário
                     if processo.prioridade > 0:
                         self.gerenciador_filas.rebaixar_prioridade(processo)
-            
             # Aplicar aging para prevenir starvation
             self.gerenciador_filas.aplicar_aging()
             

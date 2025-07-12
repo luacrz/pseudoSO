@@ -8,14 +8,15 @@ class GerenciadorFilas:
             deque(),  # Prioridade 2
             deque()   # Prioridade 3 (mais baixa)
         ]
-        self.contador_aging = {}  # PID: contador para aging
+        self.contador_aging = {}  # PID: contador para aging 
     
     def adicionar_processo(self, processo):
+        # Processos de tempo real vão direto pra fila_tempo_real
         if processo.prioridade == 0:
             self.fila_tempo_real.append(processo)
         else:
-            # Processos novos começam na fila de prioridade 1
-            fila_prioridade = min(processo.prioridade - 1, 0)
+            # Processos novos começam na fila de prioridade 0
+            fila_prioridade = processo.prioridade - 1 # 1 → 0, 2 → 1, 3 → 2
             self.filas_usuario[fila_prioridade].append(processo)
             self.contador_aging[processo.pid] = 0
     
