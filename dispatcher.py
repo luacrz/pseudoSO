@@ -69,26 +69,42 @@ class Dispatcher:
     def admitir_novos_processos(self):
         for processo in self.processos:
             if processo.tempo_inicializacao == self.tempo_atual:
-                # Verificar memória e recursos
-                if (self.gerenciador_memoria.verificar_disponibilidade(processo) and 
-                    self.gerenciador_recursos.verificar_disponibilidade(processo)):
-                    
-                    # Alocar memória
-                    if self.gerenciador_memoria.alocar_memoria(processo):
-                        # Alocar recursos
-                        if (not processo.necessita_recurso() or 
-                            self.gerenciador_recursos.alocar_recursos(processo)):
-                            
-                            self.gerenciador_filas.adicionar_processo(processo)
-                            self.processos_ativos.append(processo)
-                            self.imprimir_info_processo(processo)
-                        else:
-                            self.gerenciador_memoria.liberar_memoria(processo)
-                            print(f"Tempo {self.tempo_atual}: Falha ao alocar recursos para processo {processo.pid}")
-                    else:
-                        print(f"Tempo {self.tempo_atual}: Falha ao alocar memória para processo {processo.pid}")
-                else:
-                    print(f"Tempo {self.tempo_atual}: Recursos ou memória insuficientes para processo {processo.pid}")
+                # Verificação dos limites máximos de memória
+                if processo.prioridade == 0 and processo.blocos_memoria > 64:
+                    print(f"Tempo {self.tempo_atual}: Erro - Processo {processo.pid} excede limite máximo de 64 blocos para tempo real")
+                    continue
+                elif processo.prioridade > 0 and processo.blocos_memoria > 960:
+                    print(f"Tempo {self.tempo_atual}: Erro - Processo {processo.pid} excede limite máximo de 960 blocos para usuários")
+                    continue
+
+                # Verificação de disponibilidade de memória
+                if not self.gerenciador_memoria.verificar_disponibilidade(processo):
+                    print(f"Tempo {self.tempo_atual}: Falha - Memória insuficiente para o processo {processo.pid} (requer {processo.blocos_memoria} blocos contíguos)")
+                    continue
+
+                # Verificação de recursos de E/S
+                if processo.necessita_recurso() and not self.gerenciador_recursos.verificar_disponibilidade(processo):
+                    print(f"Tempo {self.tempo_atual}: Falha - Recursos de E/S indisponíveis para o processo {processo.pid}")
+                    continue
+
+                # Tentativa de alocação de memória
+                if not self.gerenciador_memoria.alocar_memoria(processo):
+                    print(f"Tempo {self.tempo_atual}: Falha - Não foi possível alocar memória para o processo {processo.pid}")
+                    continue
+
+                # Tentativa de alocação de recursos (se necessário)
+                if processo.necessita_recurso():
+                    if not self.gerenciador_recursos.alocar_recursos(processo):
+                        self.gerenciador_memoria.liberar_memoria(processo)  # Libera a memória alocada
+                        print(f"Tempo {self.tempo_atual}: Falha - Não foi possível alocar todos os recursos para o processo {processo.pid}")
+                        continue
+
+                # Se chegou até aqui, todas as alocações foram bem-sucedidas
+                self.gerenciador_filas.adicionar_processo(processo)
+                self.processos_ativos.append(processo)
+                print(f"Tempo {self.tempo_atual}: Processo {processo.pid} admitido com sucesso")
+                self.imprimir_info_processo(processo)
+
     
     def imprimir_info_processo(self, processo):
         """Imprime as informações do processo no formato especificado"""
